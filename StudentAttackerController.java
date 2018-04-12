@@ -15,36 +15,40 @@ public final class StudentAttackerController implements AttackerController
 
 	public int update(Game game,long timeDue)
 	{
-		int action;
+		int action = 0;
 		int i;
 		int pathDistance;
+		Node target;
 		Node targetGhosts;
-		Node gatorLocation = game.getAttacker().getLocation();
+		Node gatorLocation = game.getAttacker().getLocation(); //gets location of the gator
 		Attacker gator = game.getAttacker(); //gets the attacker (the gator)
 		List<Defender> defenders = game.getDefenders(); //list of the 4 defenders in the game
-		List<Node> pillList = game.getPillList(); //calls a list of the pills in the maze
-		List<Node> powerPillNodes = game.getCurMaze().getPowerPillNodes(); //gets the locations of the power pill nodes in the maze
-		List<Node> ghostTargets = new LinkedList<>();
+		Node defenderStartLocations = game.getCurMaze().getInitialDefendersPosition(); //gets the initial position of the defenders
+		List<Node> pillList = game.getPillList(); //gets a list of the pills in the maze
+		List<Node> ghostTargets = new LinkedList<>(); //list that stores the locations of the vulnerable ghosts
 
-		Node target = gator.getTargetNode(pillList, true); //sets the target to be the list of pills
-		action = gator.getNextDir(target, true); //the attacker's action is set to go after the pills
-
+		target = gator.getTargetNode(pillList, true); //sets target to go after the pill list
+		action = gator.getNextDir(target, true); //gator goes after pills
 
 		for (i = 0; i < 4; ++i) {
-			if (defenders.get(i).isVulnerable()) { //checks if a defender is vulnerable
-				ghostTargets.add(defenders.get(i).getLocation()); //locations of the vulnerable defenders are added to the ghostTargets list
-				targetGhosts = gator.getTargetNode(ghostTargets, true ); //targetGhosts is set using the ghostTargets list
-				action = gator.getNextDir(targetGhosts, true); // action is set to have attacker go after the closest vulnerable ghost
+			if (defenders.get(i).getLocation() == defenderStartLocations) { //if defender's are in the lair (starting location)
+				target = gator.getTargetNode(pillList, true); //gator goes after pill list
+				action = gator.getNextDir(target, true); //gator goes after pill list
 			}
-			else {
-				target = defenders.get(i).getLocation(); //target will get the defender's locations
-				pathDistance = gatorLocation.getPathDistance(target); //pathDistance finds the # distance b/w gator and defenders
-				if (pathDistance < 5) { //checks if the distance b/w the gator and a defender is less than 5
-					action = gator.getNextDir(target, false); //has the gator run away from the defender
+			if (!defenders.get(i).isVulnerable()) { //if defenders are not vulnerable
+				Node defenderLocation = defenders.get(i).getLocation();
+				pathDistance = gatorLocation.getPathDistance(defenderLocation); //finds distance b/w gator and ghosts
+				if (pathDistance < 5) { //if distance is less than 5 nodes away
+					action = gator.getNextDir(defenderLocation, false); //gator runs away from defender
 				}
 			}
+			if (defenders.get(i).isVulnerable()) { //if defenders are vulnerable
+				ghostTargets.add(defenders.get(i).getLocation());
+				targetGhosts = gator.getTargetNode(ghostTargets, true ); //finds closest ghost
+				action = gator.getNextDir(targetGhosts, true); //gator goes after the closest vulnerable ghost
+			}
 		}
-		
+
 		return action; //returns the action so the gator will move
 
 	}
